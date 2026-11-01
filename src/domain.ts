@@ -162,6 +162,12 @@ export function validate(value: unknown): Workspace {
   };
 }
 // Reject repeated JSON keys after native syntax parsing, before accepting the workspace.
+export function decodeBackup(bytes: ArrayBuffer): Workspace {
+  check(bytes.byteLength <= 2 * 1024 * 1024, "Backup exceeds 2 MiB.");
+  return parseBackup(
+    new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes),
+  );
+}
 export function parseBackup(raw: string): Workspace {
   check(
     new TextEncoder().encode(raw).length <= 2 * 1024 * 1024,

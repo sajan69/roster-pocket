@@ -153,6 +153,17 @@ test("backup round trip and invalid imports preserve saved records", async ({
     "no records were changed",
   );
   await expect(page.locator("article.entry")).toHaveCount(4);
+  await page
+    .locator("input[type=file]")
+    .setInputFiles({
+      name: "bad-utf8.json",
+      mimeType: "application/json",
+      buffer: Buffer.from([0xff]),
+    });
+  await expect(page.getByRole("alert")).toContainText(
+    "no records were changed",
+  );
+  await expect(page.locator("article.entry")).toHaveCount(4);
   page.once("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "Delete all entries", exact: true })

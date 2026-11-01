@@ -6,6 +6,7 @@ import {
   addDays,
   conflicts,
   csv,
+  decodeBackup,
   demo,
   empty,
   hours,
@@ -15,7 +16,6 @@ import {
   monday,
   net,
   newId,
-  parseBackup,
   repeats,
   totals,
   validate,
@@ -108,7 +108,7 @@ function App() {
     setError("");
     try {
       if (file.size > 2 * 1024 * 1024) throw Error("Backup exceeds 2 MiB.");
-      setRestore(parseBackup(await file.text()));
+      setRestore(decodeBackup(await file.arrayBuffer()));
     } catch (e) {
       setError(
         (e as Error).message === "Unexpected end of JSON input"

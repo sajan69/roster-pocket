@@ -35,4 +35,4 @@ npm run test:browser
 
 Domain tests cover elapsed-time arithmetic, DST ambiguity, overlap/buffer boundaries, unknown actual work, weekly grouping, bounded recurrence, validation and exports. The browser suite exercises persistence, conflict overrides, actual records, backup restore, cross-tab writes and mobile layout against the built app. Browser artifacts are retained by CI for seven days.
 
-See [schedule semantics and storage](docs/SEMANTICS.md) and [privacy and security boundaries](docs/SECURITY.md). Demo records and automated tests use synthetic schedules. No real-user adoption, statutory compliance or production deployment is claimed.
+See [schedule semantics and storage](docs/SEMANTICS.md), [privacy and security boundaries](docs/SECURITY.md) and [worked schedule and verification evidence](docs/EVALUATION.md). Demo records and automated tests use synthetic schedules. No real-user adoption, statutory compliance or production deployment is claimed.
