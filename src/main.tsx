@@ -25,6 +25,7 @@ import type { Entry, Workspace, WorkTime } from "./domain";
 import { load, save } from "./storage";
 import type { Snapshot } from "./storage";
 import "./style.css";
+import { useOffline } from "./offline";
 const dateLabel = (d: string) =>
   Temporal.PlainDate.from(d).toLocaleString("en-AU", {
     day: "numeric",
@@ -39,6 +40,7 @@ function download(name: string, content: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function App() {
+  const offline = useOffline();
   const [stored, setStored] = useState<Snapshot | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -118,7 +120,10 @@ function App() {
     <>
       <header>
         <Brand />
-        <span className="privacy">On this browser · no account needed</span>
+        <span className="privacy">
+          On this browser ·{" "}
+          {offline.ready ? "Offline ready" : "No account needed"}
+        </span>
         <button
           className="quiet"
           onClick={() =>
@@ -131,6 +136,11 @@ function App() {
         </button>
       </header>
       <main>
+        {!offline.online && (
+          <p className="banner" role="status">
+            You’re offline. Your saved records stay on this browser.
+          </p>
+        )}
         <section className="intro">
           <div>
             <p className="eyebrow">WORK, CLASSES, AND THE REST OF LIFE</p>

@@ -62,17 +62,28 @@ export async function save(
     let next: Snapshot;
     let reason = "Could not save. Your previous saved schedule is unchanged.";
     r.onsuccess = () => {
+      let current: Snapshot;
       try {
-        const current = snapshot(r.result);
-        if (current.revision !== expected) {
-          reason = "Another tab saved changes. Reload before editing again.";
-          tx.abort();
-          return;
-        }
-        next = { revision: expected + 1, data: checked };
-        store.put(next, "current");
+        current = snapshot(r.result);
       } catch {
         reason = "Stored data could not be read. It has not been changed.";
+        tx.abort();
+        return;
+      }
+      if (current.revision !== expected) {
+        reason = "Another tab saved changes. Reload before editing again.";
+        tx.abort();
+        return;
+      }
+      if (expected >= Number.MAX_SAFE_INTEGER) {
+        reason = "Storage revision limit reached. Download a backup.";
+        tx.abort();
+        return;
+      }
+      next = { revision: expected + 1, data: checked };
+      try {
+        store.put(next, "current");
+      } catch {
         tx.abort();
       }
     };

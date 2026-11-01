@@ -12,7 +12,7 @@ npm run build
 npm run preview
 ```
 
-Open `http://127.0.0.1:4173`. Development uses `npm run dev`. Records belong to the browser and origin where they were entered, so development and preview addresses have separate storage. There is no account, server database, sync or hosted deployment included.
+Open `http://127.0.0.1:4173`. Development uses `npm run dev`. Records belong to the browser and origin where they were entered, so development and preview addresses have separate storage. There is no account, server database, sync or hosted deployment included. The production build prepares an offline shell on HTTPS or localhost. Wait for **Offline ready** before relying on offline reopening. Supporting browsers may offer Add to Home Screen / Install; OS-level installation has not been certified across platforms.
 
 ## Use
 

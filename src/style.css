@@ -629,3 +629,7 @@ dialog::backdrop {
     overflow-wrap: anywhere;
   }
 }
+
+h2 {
+  overflow-wrap: anywhere;
+}

@@ -86,11 +86,9 @@ test("recorded zero actual hours never changes the original plan", async ({
   await expect(
     page.getByRole("region", { name: "Week summary" }),
   ).toContainText("0 work shifts unconfirmed");
-  const shop = page
-    .locator("article")
-    .filter({
-      has: page.getByRole("heading", { name: "Demo · Bookshop", exact: true }),
-    });
+  const shop = page.locator("article").filter({
+    has: page.getByRole("heading", { name: "Demo · Bookshop", exact: true }),
+  });
   await expect(shop).toContainText("Planned 5.5 h");
   await expect(shop).toContainText("Actual 0 h");
 });
@@ -143,13 +141,11 @@ test("backup round trip and invalid imports preserve saved records", async ({
   const backup = await readFile((await file.path())!);
   const json = JSON.parse(backup.toString());
   expect(json.entries.length).toBe(4);
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "broken.json",
-      mimeType: "application/json",
-      buffer: Buffer.from('{"schemaVersion":3}'),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "broken.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"schemaVersion":3}'),
+  });
   await expect(page.getByRole("alert")).toContainText(
     "no records were changed",
   );
@@ -159,13 +155,11 @@ test("backup round trip and invalid imports preserve saved records", async ({
     .getByRole("button", { name: "Delete all entries", exact: true })
     .click();
   await expect(page.locator("article.entry")).toHaveCount(0);
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: backup,
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: backup,
+  });
   await page
     .getByRole("button", { name: "Replace with backup", exact: true })
     .click();
@@ -216,4 +210,128 @@ test("mobile layout contains its content and has no third-party requests", async
   ).toBe(true);
   await page.screenshot({ path: "artifacts/mobile.png", fullPage: true });
   expect(external).toEqual([]);
+});
+
+test("offline shell reopens saved data and allows a new local shift", async ({
+  page,
+  context,
+}) => {
+  await sample(page);
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller)
+      await new Promise((resolve) =>
+        navigator.serviceWorker.addEventListener("controllerchange", resolve, {
+          once: true,
+        }),
+      );
+  });
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.locator("article.entry")).toHaveCount(4);
+  await page
+    .getByLabel("Job / workplace", { exact: true })
+    .fill("Offline shift");
+  await page.getByLabel("Start time", { exact: true }).fill("14:00");
+  await page
+    .getByRole("button", { name: "Check this shift", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Fits your current plan" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Add to my plan", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Offline shift", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Offline shift", exact: true }),
+  ).toBeVisible();
+  await context.setOffline(false);
+});
+test("a simulated storage write failure keeps the committed data and draft", async ({
+  page,
+}) => {
+  await sample(page);
+  await page.evaluate(() => {
+    IDBObjectStore.prototype.put = function () {
+      throw new DOMException("Simulated quota failure", "QuotaExceededError");
+    };
+  });
+  await proposal(page, "Unsaved shift");
+  await page
+    .getByRole("checkbox", { name: "Keep these entries despite the clashes" })
+    .check();
+  await page
+    .getByRole("button", { name: "Add to my plan", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText("Could not save");
+  await expect(page.getByLabel("Job / workplace", { exact: true })).toHaveValue(
+    "Unsaved shift",
+  );
+  await expect(page.locator("article.entry")).toHaveCount(4);
+  await page.reload();
+  await expect(page.locator("article.entry")).toHaveCount(4);
+  await expect(
+    page.getByRole("heading", { name: "Unsaved shift", exact: true }),
+  ).toHaveCount(0);
+});
+test("unsupported stored schema is surfaced without resetting the database", async ({
+  page,
+}) => {
+  await sample(page);
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const r = indexedDB.open("roster-pocket", 1);
+      r.onsuccess = () => {
+        const db = r.result,
+          tx = db.transaction("workspace", "readwrite"),
+          s = tx.objectStore("workspace"),
+          get = s.get("current");
+        get.onsuccess = () =>
+          s.put(
+            { ...get.result, data: { ...get.result.data, schemaVersion: 99 } },
+            "current",
+          );
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onabort = () => reject(tx.error);
+      };
+    });
+  });
+  await page.reload();
+  await expect(page.getByRole("alert")).toContainText("not supported");
+  await expect(
+    page.getByRole("button", { name: "Try a sample week" }),
+  ).toHaveCount(0);
+  const version = await page.evaluate(
+    async () =>
+      await new Promise((resolve) => {
+        const r = indexedDB.open("roster-pocket", 1);
+        r.onsuccess = () => {
+          const db = r.result,
+            tx = db.transaction("workspace", "readonly"),
+            q = tx.objectStore("workspace").get("current");
+          q.onsuccess = () => resolve(q.result.data.schemaVersion);
+          tx.oncomplete = () => db.close();
+        };
+      }),
+  );
+  expect(version).toBe(99);
+});
+test("CSV download exposes unconfirmed actuals as empty cells", async ({
+  page,
+}) => {
+  await sample(page);
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export hours CSV" }).click();
+  const file = await downloading;
+  const text = await readFile((await file.path())!, "utf8");
+  expect(text.split("\r\n").length).toBe(5);
+  expect(text).toContain('"Demo · Bookshop"');
+  expect(text).toContain(',"","","",""');
 });
