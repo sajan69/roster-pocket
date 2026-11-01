@@ -63,6 +63,7 @@ function App() {
     gate.current = true;
     setBusy(true);
     setError("");
+    setNotice("");
     try {
       const next = await save(stored.revision, data);
       setStored(next);
@@ -155,7 +156,7 @@ function App() {
               disabled={busy}
               onClick={() =>
                 void commit(
-                  demo(week, data.settings.zone),
+                  { ...data, entries: demo(week, data.settings.zone).entries },
                   "Sample schedule loaded. Entries marked Demo are fictional.",
                 )
               }
@@ -188,7 +189,7 @@ function App() {
             <small>Shifts starting this week</small>
           </div>
           <div>
-            <span>Recorded actual</span>
+            <span>Actual for this plan</span>
             <strong>{hours(sum.actual)}</strong>
             <small>
               {sum.unconfirmed} work{" "}
@@ -333,9 +334,9 @@ function App() {
                               <button
                                 className="quiet delete"
                                 disabled={busy}
-                                onClick={() => {
-                                  if (confirm(`Delete “${e.label}”?`))
-                                    void commit(
+                                onClick={async () => {
+                                  if (confirm(`Delete “${e.label}”?`)) {
+                                    const deleted = await commit(
                                       {
                                         ...data,
                                         entries: data.entries.filter(
@@ -344,6 +345,9 @@ function App() {
                                       },
                                       "Entry deleted.",
                                     );
+                                    if (deleted && editing?.id === e.id)
+                                      resetForm();
+                                  }
                                 }}
                               >
                                 Delete
@@ -511,7 +515,10 @@ function App() {
                 <p>
                   Replace your current {data.entries.length} entries with{" "}
                   {restore.entries.length} entries from this backup? Download
-                  your current backup first if you need it.
+                  your current backup first if you need it. This also restores
+                  the view zone ({restore.settings.zone}), hour budget (
+                  {hours(restore.settings.budgetMinutes)}) and transition buffer
+                  ({restore.settings.bufferMinutes} min).
                 </p>
                 <button
                   disabled={busy}
@@ -631,7 +638,7 @@ function Settings({
           type="number"
           min="0"
           max="168"
-          step="0.25"
+          step="any"
           defaultValue={data.settings.budgetMinutes / 60}
           required
         />
@@ -725,6 +732,8 @@ function Composer({
         ),
       ).planned
     : null;
+  const overBudget =
+    proposedTotal !== null && proposedTotal > data.settings.budgetMinutes;
   return (
     <section className="composer">
       <p className="eyebrow">BEFORE YOU SAY YES</p>
@@ -883,11 +892,15 @@ function Composer({
       )}
       {preview && (
         <div
-          className={`preview ${clashes.total ? "warning" : ""}`}
+          className={`preview ${clashes.total || overBudget ? "warning" : ""}`}
           aria-live="polite"
         >
           <h3>
-            {clashes.total ? "A closer look needed" : "Fits your current plan"}
+            {clashes.total
+              ? "A closer look needed"
+              : overBudget
+                ? "Above your hour budget"
+                : "Fits your current plan"}
           </h3>
           {clashes.total ? (
             <ul>

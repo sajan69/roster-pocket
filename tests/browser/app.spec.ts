@@ -35,7 +35,10 @@ test("sample records survive reload and keep unknown actual work explicit", asyn
     page.getByRole("heading", { name: "Demo · Bookshop", exact: true }),
   ).toBeVisible();
   await expect(page.locator("article.entry")).toHaveCount(4);
-  await page.screenshot({ path: "artifacts/desktop.png", fullPage: true });
+  await page.screenshot({
+    path: `artifacts/${test.info().project.name}-desktop.png`,
+    fullPage: true,
+  });
 });
 test("preview has no write and overlap requires explicit override; HTML labels stay inert", async ({
   page,
@@ -208,7 +211,10 @@ test("mobile layout contains its content and has no third-party requests", async
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: "artifacts/mobile.png", fullPage: true });
+  await page.screenshot({
+    path: `artifacts/${test.info().project.name}-mobile.png`,
+    fullPage: true,
+  });
   expect(external).toEqual([]);
 });
 
@@ -342,4 +348,33 @@ test("CSV download exposes unconfirmed actuals as empty cells", async ({
   expect(text.split("\r\n").length).toBe(5);
   expect(text).toContain('"Demo · Bookshop"');
   expect(text).toContain(',"","","",""');
+});
+
+test("sample preserves personal preferences and above-budget previews remain explicit", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByLabel("Weekly hour budget", { exact: true }).fill("10");
+  await page.getByRole("button", { name: "Save preferences" }).click();
+  await expect(page.getByRole("status")).toContainText("Preferences saved");
+  await page.getByRole("button", { name: "Try a sample week" }).click();
+  await expect(
+    page.getByRole("region", { name: "Week summary" }),
+  ).toContainText("10 h");
+  await page
+    .getByLabel("Job / workplace", { exact: true })
+    .fill("Extra afternoon");
+  await page.getByLabel("Start time", { exact: true }).fill("14:00");
+  await page
+    .getByRole("button", { name: "Check this shift", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Above your hour budget", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add to my plan", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("region", { name: "Week summary" }),
+  ).toContainText("11 h");
 });

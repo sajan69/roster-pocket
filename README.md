@@ -29,7 +29,7 @@ Download a JSON backup regularly. Restore validates the file and previews replac
 ```sh
 npm test
 npm run build
-npx playwright install --with-deps chromium
+npx playwright install --with-deps chromium webkit
 npm run test:browser
 ```
 
