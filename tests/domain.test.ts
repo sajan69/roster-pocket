@@ -160,3 +160,10 @@ test("Known sample totals and commitment exclusion", () => {
   });
   assert.equal(d.entries.length, 4);
 });
+
+test("Maximum schedule counts every clash without retaining quadratic explanation objects", () => {
+  const entries = Array.from({ length: 1000 }, (_, i) => entry(String(i)));
+  const result = conflicts(entries, [], 30);
+  assert.equal(result.total, 499500);
+  assert.equal(result.length, 50);
+});

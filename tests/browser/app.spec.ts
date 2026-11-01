@@ -226,9 +226,17 @@ test("offline shell reopens saved data and allows a new local shift", async ({
         }),
       );
   });
+  page.on("pageerror", (error) =>
+    console.log("OFFLINE_PAGE_ERROR=" + error.message),
+  );
   await context.setOffline(true);
   await page.reload();
-  await expect(page.locator("article.entry")).toHaveCount(4);
+  await expect(page.locator("article.entry"))
+    .toHaveCount(4)
+    .catch(async (error) => {
+      console.log("OFFLINE_BODY=" + (await page.locator("body").innerText()));
+      throw error;
+    });
   await page
     .getByLabel("Job / workplace", { exact: true })
     .fill("Offline shift");

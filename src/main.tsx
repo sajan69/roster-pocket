@@ -245,10 +245,10 @@ function App() {
                 </button>
               </div>
             </div>
-            {allConflicts.length > 0 && (
+            {allConflicts.total > 0 && (
               <p className="conflict-note">
-                {allConflicts.length} overlap or short transition{" "}
-                {allConflicts.length === 1 ? "needs" : "need"} a closer look.
+                {allConflicts.total} overlap or short transition{" "}
+                {allConflicts.total === 1 ? "needs" : "need"} a closer look.
                 Your records are kept as entered.
               </p>
             )}
@@ -710,7 +710,7 @@ function Composer({
         data.entries.filter((e) => e.id !== editing?.id),
         data.settings.bufferMinutes,
       )
-    : [];
+    : conflicts([], [], data.settings.bufferMinutes);
   const proposedTotal = preview
     ? totals(
         weekEntries(
@@ -883,13 +883,13 @@ function Composer({
       )}
       {preview && (
         <div
-          className={`preview ${clashes.length ? "warning" : ""}`}
+          className={`preview ${clashes.total ? "warning" : ""}`}
           aria-live="polite"
         >
           <h3>
-            {clashes.length ? "A closer look needed" : "Fits your current plan"}
+            {clashes.total ? "A closer look needed" : "Fits your current plan"}
           </h3>
-          {clashes.length ? (
+          {clashes.total ? (
             <ul>
               {clashes.slice(0, 8).map((c, i) => (
                 <li key={i}>
@@ -898,8 +898,8 @@ function Composer({
                   {c.type === "buffer" && ` (${c.gap} min gap)`}
                 </li>
               ))}
-              {clashes.length > 8 && (
-                <li>And {clashes.length - 8} more clashes.</li>
+              {clashes.total > 8 && (
+                <li>And {clashes.total - 8} more clashes.</li>
               )}
             </ul>
           ) : (
@@ -918,7 +918,7 @@ function Composer({
               were checked for clashes.
             </p>
           )}
-          {clashes.length > 0 && (
+          {clashes.total > 0 && (
             <label className="check">
               <input
                 type="checkbox"
@@ -929,7 +929,7 @@ function Composer({
             </label>
           )}
           <button
-            disabled={busy || (clashes.length > 0 && !override)}
+            disabled={busy || (clashes.total > 0 && !override)}
             onClick={() => void onSave(preview)}
           >
             {busy

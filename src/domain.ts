@@ -261,26 +261,41 @@ export type Conflict = {
   type: "overlap" | "buffer";
   gap: number;
 };
+export type ConflictList = Conflict[] & { total: number };
 export function conflicts(
   candidates: Entry[],
   existing: Entry[],
   buffer: number,
-): Conflict[] {
-  const found: Conflict[] = [];
-  const all = [...existing, ...candidates];
-  const candidateIds = new Set(candidates.map((e) => e.id));
-  for (let i = 0; i < all.length; i++)
-    for (let j = i + 1; j < all.length; j++) {
-      const a = all[i],
-        b = all[j];
-      if (!candidateIds.has(a.id) && !candidateIds.has(b.id)) continue;
-      const gap =
-        (Math.max(instant(a.start), instant(b.start)) -
-          Math.min(instant(a.end), instant(b.end))) /
-        60000;
-      if (gap < 0) found.push({ a, b, type: "overlap", gap });
-      else if (gap < buffer) found.push({ a, b, type: "buffer", gap });
+): ConflictList {
+  const found = Object.assign([] as Conflict[], { total: 0 });
+  const prepare = (entry: Entry) => ({
+    entry,
+    start: instant(entry.start),
+    end: instant(entry.end),
+  });
+  const proposed = candidates.map(prepare),
+    saved = existing.map(prepare);
+  function compare(
+    a: ReturnType<typeof prepare>,
+    b: ReturnType<typeof prepare>,
+  ) {
+    const gap = (Math.max(a.start, b.start) - Math.min(a.end, b.end)) / 60000;
+    if (gap < buffer || gap < 0) {
+      found.total++;
+      if (found.length < 50)
+        found.push({
+          a: a.entry,
+          b: b.entry,
+          type: gap < 0 ? "overlap" : "buffer",
+          gap,
+        });
     }
+  }
+  for (let i = 0; i < proposed.length; i++) {
+    for (const other of saved) compare(proposed[i], other);
+    for (let j = i + 1; j < proposed.length; j++)
+      compare(proposed[i], proposed[j]);
+  }
   return found;
 }
 export function newId(): string {

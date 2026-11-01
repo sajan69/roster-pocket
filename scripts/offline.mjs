@@ -25,7 +25,7 @@ const URLS=new Set(ASSETS.map(p=>new URL(p,self.registration.scope).href));
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(p=>new Request(new URL(p,self.registration.scope),{cache:'reload'}))))));
 // Updates wait for existing tabs to close; there is no forced reload or schema reset.
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith(PREFIX)&&key!==CACHE)await caches.delete(key);await self.clients.claim();})()));
-self.addEventListener('fetch',event=>{const r=event.request;if(r.method!=='GET'||new URL(r.url).origin!==self.location.origin)return;if(URLS.has(r.url)||r.mode==='navigate')event.respondWith((async()=>{const cache=await caches.open(CACHE);const match=await cache.match(r);if(match)return match;if(r.mode==='navigate')return cache.match(new URL('./',self.registration.scope));return fetch(r);})());});
+self.addEventListener('fetch',event=>{const r=event.request;if(r.method!=='GET'||new URL(r.url).origin!==self.location.origin)return;if(URLS.has(r.url)||r.mode==='navigate')event.respondWith((async()=>{const cache=await caches.open(CACHE);const match=await cache.match(r,{ignoreVary:true});if(match)return match;if(r.mode==='navigate')return cache.match(new URL('./',self.registration.scope),{ignoreVary:true});return fetch(r);})());});
 `;
 await writeFile("dist/sw.js", worker);
 console.log(

@@ -29,3 +29,7 @@ Production output is a static Vite build with a bundled React runtime and Tempor
 Primary guidance checked 2 November 2026: [React build guidance](https://react.dev/learn/build-a-react-app-from-scratch), [Vite](https://vite.dev/guide/), [Temporal polyfill](https://github.com/js-temporal/temporal-polyfill), [Temporal time disambiguation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/ZonedDateTime/from), [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
 
 Offline guidance checked 2 November 2026: [service worker lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers) and [PWA installability](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable). Offline browser tests use the production build; an ordinary insecure HTTP hostname cannot register a service worker.
+
+Conflict counting parses each endpoint once per check. It compares candidate-to-saved and candidate-to-candidate pairs, counts every issue, and retains at most 50 descriptions; the preview shows eight with an explicit remaining count. A 1,000-entry fully overlapping fixture has 499,500 conflicts without retaining 499,500 objects. This is a bounded correctness case, not a device-performance guarantee.
+
+Offline matching ignores Vary only for generated same-origin static URLs and navigation fallback, whose contents are fixed within a build. No dynamic API or personal response is cached.
